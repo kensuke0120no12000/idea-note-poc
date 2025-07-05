@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class CategoryDiscoveryAgent:
-    def __init__(self, logs_dir="アイデアノート/PoC_Sandbox/data/raw_event_logs", n_clusters=5):
+    def __init__(self, logs_dir="アイデアノート/PoC_Sandbox/data/raw_event_logs", max_clusters=10):
         self.logs_dir = logs_dir
-        self.n_clusters = n_clusters
+        self.max_clusters = max_clusters # 試行する最大クラスタ数
         self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0) # 2.5-flashを利用
         self.logs = self._load_logs()
@@ -38,27 +38,44 @@ class CategoryDiscoveryAgent:
             text += f"Service: {log['service']}. "
         return text
 
+    def _find_optimal_k(self, vectors):
+        """エルボー法を用いて最適なクラスタ数(k)を決定する"""
+        sse = []
+        k_range = range(2, self.max_clusters + 1) # 2クラスタから試行
+        for k in k_range:
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init='auto').fit(vectors)
+            sse.append(kmeans.inertia_) # inertia_はSSEを返す
+
+        # SSEの減少率が最も大きい点を「肘」とする
+        if len(sse) < 2:
+            return 2 # データが少ない場合はデフォルト値
+
+        deltas = np.diff(sse, 2) # 2階差分を取る
+        optimal_k = k_range[np.argmax(deltas) + 1] # 差分が最大の点が肘
+        print(f"Optimal number of clusters (k) found: {optimal_k}")
+        return optimal_k
+
     def discover_categories(self):
-        """ログをクラスタリングし、新しいカテゴリを発見する"""
-        if not self.logs:
-            print("No logs found.")
+        """ログをクラスタリングし、新しいカテゴリ名を生成する"""
+        if not self.logs or len(self.logs) < 2:
+            print("Not enough logs to perform clustering.")
             return {}
 
-        # 1. 各ログをベクトル化
         log_texts = [self._get_text_for_embedding(log) for log in self.logs]
         vectors = self.embedding_model.embed_documents(log_texts)
         
-        # 2. KMeansでクラスタリング
-        kmeans = KMeans(n_clusters=self.n_clusters, random_state=42, n_init='auto').fit(vectors)
-        labels = kmeans.labels_
-
-        # 3. 各クラスタのサマリーをLLMに生成させる
+        # 最適なクラスタ数を自動で決定
+        optimal_k = self._find_optimal_k(np.array(vectors))
+        kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init='auto').fit(vectors)
+        
         discovered_categories = {}
-        for i in range(self.n_clusters):
-            cluster_logs = [self.logs[j] for j, label in enumerate(labels) if label == i]
+        for i in range(optimal_k):
+            cluster_logs = [self.logs[j] for j, label in enumerate(kmeans.labels_) if label == i]
             
-            # クラスタ内のログの一部をプロンプトに含める
-            sample_logs_text = "\\n".join([json.dumps(log, ensure_ascii=False) for log in cluster_logs[:5]]) # 最大5件
+            if not cluster_logs:
+                continue
+
+            sample_logs_text = "\\n".join([json.dumps(log, ensure_ascii=False) for log in cluster_logs[:5]])
             
             prompt = PromptTemplate.from_template(
                 """以下のイベントログ群は、ある共通の問題やパターンによってグループ化されています。
@@ -75,16 +92,16 @@ class CategoryDiscoveryAgent:
             response = chain.invoke({"sample_logs": sample_logs_text})
             category_name = response.content.strip()
             
+            # 出力からlog_idsを削除し、純粋なカテゴリ定義のみを返す
             discovered_categories[f"category_{i+1}"] = {
-                "name": category_name,
-                "log_ids": [log['log_id'] for log in cluster_logs]
+                "name": category_name
             }
-            print(f"Generated Category: {category_name}")
+            print(f"Generated Category {i+1}: {category_name}")
 
         return discovered_categories
 
 if __name__ == '__main__':
-    agent = CategoryDiscoveryAgent(n_clusters=5)
+    agent = CategoryDiscoveryAgent()
     categories = agent.discover_categories()
     
     # 結果をファイルに保存

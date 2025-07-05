@@ -2,6 +2,7 @@ import json
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,38 +20,44 @@ class ClassificationAgent:
             print(f"Error: Categories file not found at {path}")
             return {}
 
-    def classify_log(self, log_entry):
-        """単一のログエントリを、既存のカテゴリに分類する"""
+    def classify_logs_in_batch(self, log_entries):
+        """複数のログエントリをバッチで分類する"""
         if not self.categories:
-            return "No categories available for classification."
+            return {}
 
-        # 分類しやすいようにカテゴリ情報を整形
         category_list_str = "\\n".join([f"- {key}: {value['name']}" for key, value in self.categories.items()])
-        log_entry_str = json.dumps(log_entry, ensure_ascii=False, indent=2)
+        
+        # 複数のログを整形してプロンプトに含める
+        log_entries_str = "\\n---\\n".join([f"LOG_ID: {log['log_id']}\\n" + json.dumps(log, ensure_ascii=False, indent=2) for log in log_entries])
 
-        prompt = PromptTemplate.from_template(
-            """以下のイベントログを分析し、最も関連性の高いカテゴリを一つだけ選んでください。
-            回答は、選択したカテゴリのID（例: "category_1"）のみを記述してください。他のテキストは一切含めないでください。
+        parser = JsonOutputParser()
+
+        prompt = PromptTemplate(
+            template="""以下のイベントログ群を分析し、それぞれがどのカテゴリに属するかを分類してください。
+            回答は、必ず指定したJSON形式で、各LOG_IDに対応する最も関連性の高いカテゴリIDを記述してください。
 
             ## 利用可能なカテゴリ一覧
             {category_list}
 
-            ## 分類対象のイベントログ
-            {log_entry}
+            ## 分類対象のイベントログ群
+            {log_entries}
 
-            最も関連性の高いカテゴリID:"""
+            ## 出力フォーマット指示
+            {format_instructions}
+            """,
+            input_variables=["category_list", "log_entries"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
         )
 
-        chain = prompt | self.llm
+        chain = prompt | self.llm | parser
+        
+        print(f"Classifying {len(log_entries)} logs in a single batch...")
         response = chain.invoke({
             "category_list": category_list_str,
-            "log_entry": log_entry_str
+            "log_entries": log_entries_str
         })
         
-        # 回答からカテゴリIDを抽出
-        classified_category_id = response.content.strip()
-        
-        return classified_category_id
+        return response
 
 if __name__ == '__main__':
     # テスト用のダミーログ

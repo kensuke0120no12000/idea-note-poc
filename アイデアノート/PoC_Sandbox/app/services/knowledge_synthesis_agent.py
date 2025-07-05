@@ -21,14 +21,12 @@ class KnowledgeSynthesisAgent:
             print(f"Error: File not found at {path}")
             return None
 
-    def synthesize_knowledge_for_category(self, category_id):
+    def synthesize_knowledge_for_category(self, category_id, log_ids):
         """特定のカテゴリに属するログから、ナレッジ記事を生成する"""
         if not self.categories or category_id not in self.categories:
             return f"Category ID '{category_id}' not found."
 
-        category_info = self.categories[category_id]
-        category_name = category_info['name']
-        log_ids = category_info['log_ids']
+        category_name = self.categories[category_id]['name']
 
         # 該当するログファイルの内容を読み込む
         log_contents = []
@@ -71,26 +69,29 @@ class KnowledgeSynthesisAgent:
 
         return f"# {category_name} 対応マニュアル\\n" + response.content.strip()
 
-if __name__ == '__main__':
-    agent = KnowledgeSynthesisAgent()
-    
-    # テストとして、発見されたカテゴリの1つからナレッジを生成する
-    # 例: 'category_4' (システムリソース枯渇とデータベース接続障害)
-    target_category_id = "category_4"
-    
-    print(f"Synthesizing knowledge for '{target_category_id}'...")
-    knowledge_article = agent.synthesize_knowledge_for_category(target_category_id)
-    
-    print("\\n--- Generated Knowledge Article ---")
-    print(knowledge_article)
+# このファイル単体での実行ロジックは、パイプラインに統合されたため不要。
+# if __name__ == '__main__':
+#     agent = KnowledgeSynthesisAgent()
+#     
+#     # テストとして、発見されたカテゴリの1つからナレッジを生成する
+#     # 例: 'category_4' (システムリソース枯渇とデータベース接続障害)
+#     target_category_id = "category_4"
+#     
+#     print(f"Synthesizing knowledge for '{target_category_id}'...")
+#     knowledge_article = agent.synthesize_knowledge_for_category(target_category_id, ["log_id_1", "log_id_2"])
+#     
+#     print("\\n--- Generated Knowledge Article ---")
+#     print(knowledge_article)
+#
+#     # 生成したナレッジをファイルに保存
+#     output_dir = "アイデアノート/PoC_Sandbox/data/synthesized_knowledge"
+#     if not os.path.exists(output_dir):
+#         os.makedirs(output_dir)
+#     
+#     output_path = os.path.join(output_dir, f"{target_category_id}_manual.md")
+#     with open(output_path, 'w', encoding='utf-8') as f:
+#         f.write(knowledge_article)
+#         
+#     print(f"\\nKnowledge article saved to {output_path}")
 
-    # 生成したナレッジをファイルに保存
-    output_dir = "アイデアノート/PoC_Sandbox/data/synthesized_knowledge"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    
-    output_path = os.path.join(output_dir, f"{target_category_id}_manual.md")
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(knowledge_article)
-        
-    print(f"\\nKnowledge article saved to {output_path}") 
+# もし単体テストが必要な場合は、分類済みのログIDリストを別途用意する必要がある。 
