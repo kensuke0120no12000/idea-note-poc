@@ -36,7 +36,7 @@ class InferenceEngine:
         texts = text_splitter.split_documents(documents)
 
         # 3. ベクトルストアの構築 (Gemini)
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
         vectorstore = FAISS.from_documents(texts, embeddings)
         retriever = vectorstore.as_retriever()
 
