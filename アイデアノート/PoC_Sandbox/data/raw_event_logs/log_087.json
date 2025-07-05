@@ -1,0 +1,11 @@
+{
+    "log_id": "log_087",
+    "timestamp": "2025-06-15T05:25:49.011840",
+    "event_type": "service_error",
+    "service": "api_gateway",
+    "details": {
+        "error_code": 500,
+        "message": "Database connection timed out.",
+        "severity": "critical"
+    }
+}

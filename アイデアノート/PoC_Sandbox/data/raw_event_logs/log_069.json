@@ -1,0 +1,11 @@
+{
+    "log_id": "log_069",
+    "timestamp": "2025-06-14T20:25:49.002843",
+    "event_type": "service_error",
+    "service": "database",
+    "details": {
+        "error_code": 503,
+        "message": "Failed to process message from queue: malformed JSON.",
+        "severity": "error"
+    }
+}

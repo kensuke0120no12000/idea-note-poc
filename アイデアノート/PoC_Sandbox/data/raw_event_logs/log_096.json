@@ -1,0 +1,11 @@
+{
+    "log_id": "log_096",
+    "timestamp": "2025-06-22T09:25:49.016139",
+    "event_type": "service_error",
+    "service": "database",
+    "details": {
+        "error_code": 500,
+        "message": "Disk space is critically low on server node-A.",
+        "severity": "error"
+    }
+}

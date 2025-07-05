@@ -1,0 +1,11 @@
+{
+    "log_id": "log_065",
+    "timestamp": "2025-06-20T03:25:49.000806",
+    "event_type": "service_error",
+    "service": "database",
+    "details": {
+        "error_code": 401,
+        "message": "Database connection timed out.",
+        "severity": "warning"
+    }
+}

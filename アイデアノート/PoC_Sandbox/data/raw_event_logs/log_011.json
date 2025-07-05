@@ -1,0 +1,11 @@
+{
+    "log_id": "log_011",
+    "timestamp": "2025-06-19T14:25:48.974518",
+    "event_type": "user_login_attempt",
+    "user_id": "user_163",
+    "details": {
+        "ip_address": "192.168.1.6",
+        "reason": "Invalid credentials",
+        "success": false
+    }
+}

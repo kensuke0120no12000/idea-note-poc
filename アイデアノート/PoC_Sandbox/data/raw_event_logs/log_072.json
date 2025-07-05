@@ -1,0 +1,11 @@
+{
+    "log_id": "log_072",
+    "timestamp": "2025-06-30T02:25:49.003844",
+    "event_type": "service_error",
+    "service": "inventory_service",
+    "details": {
+        "error_code": 500,
+        "message": "Unexpected null pointer exception in inventory service.",
+        "severity": "warning"
+    }
+}

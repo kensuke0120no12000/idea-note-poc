@@ -1,0 +1,11 @@
+{
+    "log_id": "log_034",
+    "timestamp": "2025-06-10T06:25:48.985726",
+    "event_type": "service_error",
+    "service": "database",
+    "details": {
+        "error_code": 401,
+        "message": "Payment gateway API returned 503 Service Unavailable.",
+        "severity": "error"
+    }
+}

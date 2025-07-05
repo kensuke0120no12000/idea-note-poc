@@ -1,0 +1,12 @@
+{
+    "log_id": "log_047",
+    "timestamp": "2025-07-01T13:25:48.991728",
+    "event_type": "item_purchase",
+    "user_id": "user_173",
+    "details": {
+        "product_id": "prod_1025",
+        "quantity": 3,
+        "price": 135.15,
+        "success": true
+    }
+}

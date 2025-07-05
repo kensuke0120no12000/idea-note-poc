@@ -1,0 +1,11 @@
+{
+    "log_id": "log_008",
+    "timestamp": "2025-07-03T15:25:48.973517",
+    "event_type": "service_error",
+    "service": "inventory_service",
+    "details": {
+        "error_code": 503,
+        "message": "User authentication failed: invalid token.",
+        "severity": "warning"
+    }
+}

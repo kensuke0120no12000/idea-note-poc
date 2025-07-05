@@ -1,0 +1,11 @@
+{
+    "log_id": "log_027",
+    "timestamp": "2025-06-05T19:25:48.982728",
+    "event_type": "service_error",
+    "service": "inventory_service",
+    "details": {
+        "error_code": 500,
+        "message": "Failed to process message from queue: malformed JSON.",
+        "severity": "warning"
+    }
+}

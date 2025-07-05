@@ -1,0 +1,11 @@
+{
+    "log_id": "log_086",
+    "timestamp": "2025-06-10T20:25:49.011840",
+    "event_type": "service_error",
+    "service": "api_gateway",
+    "details": {
+        "error_code": 401,
+        "message": "Failed to process message from queue: malformed JSON.",
+        "severity": "warning"
+    }
+}

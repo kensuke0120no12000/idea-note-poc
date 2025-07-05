@@ -1,0 +1,11 @@
+{
+    "log_id": "log_050",
+    "timestamp": "2025-06-20T16:25:48.993806",
+    "event_type": "service_error",
+    "service": "auth_service",
+    "details": {
+        "error_code": 503,
+        "message": "Unexpected null pointer exception in inventory service.",
+        "severity": "error"
+    }
+}

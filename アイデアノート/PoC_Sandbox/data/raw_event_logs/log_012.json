@@ -1,0 +1,11 @@
+{
+    "log_id": "log_012",
+    "timestamp": "2025-07-01T18:25:48.974518",
+    "event_type": "service_error",
+    "service": "auth_service",
+    "details": {
+        "error_code": 401,
+        "message": "User authentication failed: invalid token.",
+        "severity": "critical"
+    }
+}

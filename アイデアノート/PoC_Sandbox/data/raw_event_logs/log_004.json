@@ -1,0 +1,11 @@
+{
+    "log_id": "log_004",
+    "timestamp": "2025-06-14T13:25:48.971509",
+    "event_type": "service_error",
+    "service": "auth_service",
+    "details": {
+        "error_code": 401,
+        "message": "Payment gateway API returned 503 Service Unavailable.",
+        "severity": "critical"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "log_id": "log_081",
+    "timestamp": "2025-06-27T01:25:49.008840",
+    "event_type": "service_error",
+    "service": "inventory_service",
+    "details": {
+        "error_code": 401,
+        "message": "Disk space is critically low on server node-A.",
+        "severity": "warning"
+    }
+}

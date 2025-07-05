@@ -1,0 +1,11 @@
+{
+    "log_id": "log_039",
+    "timestamp": "2025-06-16T18:25:48.988724",
+    "event_type": "service_error",
+    "service": "api_gateway",
+    "details": {
+        "error_code": 500,
+        "message": "Disk space is critically low on server node-A.",
+        "severity": "critical"
+    }
+}

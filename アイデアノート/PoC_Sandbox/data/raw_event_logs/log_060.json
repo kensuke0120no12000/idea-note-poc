@@ -1,0 +1,11 @@
+{
+    "log_id": "log_060",
+    "timestamp": "2025-06-10T04:25:48.997806",
+    "event_type": "service_error",
+    "service": "database",
+    "details": {
+        "error_code": 503,
+        "message": "Disk space is critically low on server node-A.",
+        "severity": "critical"
+    }
+}
