@@ -56,7 +56,7 @@ class CategoryDiscoveryAgent:
         return optimal_k
 
     def discover_categories(self):
-        """ログをクラスタリングし、新しいカテゴリ名を生成する"""
+        """ログをクラスタリングし、新しいカテゴリ名をバッチ処理で一度に生成する"""
         if not self.logs or len(self.logs) < 2:
             print("Not enough logs to perform clustering.")
             return {}
@@ -64,39 +64,64 @@ class CategoryDiscoveryAgent:
         log_texts = [self._get_text_for_embedding(log) for log in self.logs]
         vectors = self.embedding_model.embed_documents(log_texts)
         
-        # 最適なクラスタ数を自動で決定
         optimal_k = self._find_optimal_k(np.array(vectors))
         kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init='auto').fit(vectors)
         
-        discovered_categories = {}
+        # 各クラスタのサンプルログを準備
+        cluster_samples_for_prompt = ""
         for i in range(optimal_k):
             cluster_logs = [self.logs[j] for j, label in enumerate(kmeans.labels_) if label == i]
-            
             if not cluster_logs:
                 continue
-
+            
             sample_logs_text = "\\n".join([json.dumps(log, ensure_ascii=False) for log in cluster_logs[:5]])
-            
-            prompt = PromptTemplate.from_template(
-                """以下のイベントログ群は、ある共通の問題やパターンによってグループ化されています。
-                このグループ全体を代表する、簡潔で分かりやすい「カテゴリ名」を提案してください。
-                カテゴリ名は、問題の本質を捉えた名詞句（例：「データベース接続のタイムアウト」、「特定のIPからのログイン失敗多発」）にしてください。
+            cluster_samples_for_prompt += f"\\n--- Cluster {i+1} Samples ---\\n{sample_logs_text}\\n"
 
-                ログサンプル:
-                {sample_logs}
+        prompt = PromptTemplate.from_template(
+            """以下の複数のイベントログのグループ（クラスタ）があります。
+            それぞれのクラスタについて、内容を代表する簡潔で分かりやすい「カテゴリ名」を提案してください。
+            回答は、"cluster_1": "カテゴリ名1", "cluster_2": "カテゴリ名2", ... のようなJSON形式で記述してください。
 
-                提案するカテゴリ名:"""
-            )
+            ## 分析対象のログサンプル群
+            {cluster_samples}
+
+            ## 出力JSON:
+            """
+        )
+
+        chain = prompt | self.llm
+        
+        print(f"Generating names for {optimal_k} categories in a single batch...")
+        response_content = chain.invoke({"cluster_samples": cluster_samples_for_prompt}).content
+        
+        try:
+            # LLMの出力（文字列）をJSONとしてパース
+            # マークダウンのコードブロック(` ```json ... ``` `)を除去
+            if "```json" in response_content:
+                response_content = response_content.split("```json")[1].split("```")[0]
+            elif "```" in response_content:
+                response_content = response_content.split("```")[1].split("```")[0]
+
+            response = json.loads(response_content)
+        except (json.JSONDecodeError, IndexError) as e:
+            print(f"Error: Failed to decode LLM response as JSON. Error: {e}\\nResponse:\\n{response_content}")
+            return {}
+
+        # LLMの回答を整形して最終的な出力を作成
+        discovered_categories = {}
+        for i, (key, value) in enumerate(response.items()):
+            # keyが "cluster_1" や "category_1" のような形式を想定
+            new_key = f"category_{i+1}"
+            # valueがカテゴリ名そのものであるか、辞書に含まれているかを考慮
+            if isinstance(value, dict) and 'name' in value:
+                 discovered_categories[new_key] = {'name': value['name']}
+            elif isinstance(value, str):
+                 discovered_categories[new_key] = {'name': value}
+            else:
+                 print(f"Warning: Unexpected format for cluster {key}: {value}")
+                 discovered_categories[new_key] = {'name': 'Unnamed Category'}
             
-            chain = prompt | self.llm
-            response = chain.invoke({"sample_logs": sample_logs_text})
-            category_name = response.content.strip()
-            
-            # 出力からlog_idsを削除し、純粋なカテゴリ定義のみを返す
-            discovered_categories[f"category_{i+1}"] = {
-                "name": category_name
-            }
-            print(f"Generated Category {i+1}: {category_name}")
+            print(f"Generated Category {i+1}: {discovered_categories[new_key]['name']}")
 
         return discovered_categories
 

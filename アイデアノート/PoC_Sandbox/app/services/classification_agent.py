@@ -1,31 +1,59 @@
 import json
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+import numpy as np
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from dotenv import load_dotenv
+from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 
 class ClassificationAgent:
-    def __init__(self, categories_path="アイデアノート/PoC_Sandbox/data/discovered_categories.json"):
-        self.categories = self._load_categories(categories_path)
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    def __init__(self, category_centroids):
+        self.category_centroids = category_centroids
+        self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
 
-    def _load_categories(self, path):
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"Error: Categories file not found at {path}")
-            return {}
+    def _get_text_for_embedding(self, log):
+        """ログからベクトル化に適したテキストを抽出・整形する"""
+        details = log.get("details", {})
+        text = f"Event Type: {log.get('event_type', 'N/A')}. "
+        if "message" in details:
+            text += f"Message: {details['message']}. "
+        if "reason" in details:
+            text += f"Reason: {details['reason']}. "
+        if "service" in log:
+            text += f"Service: {log['service']}. "
+        return text
+
+    def classify_log(self, log_entry, similarity_threshold=0.75):
+        """ベクトル距離に基づいて単一のログを分類し、未知カテゴリを検知する"""
+        if not self.category_centroids:
+            return "unclassified"
+            
+        log_text = self._get_text_for_embedding(log_entry)
+        log_vector = self.embedding_model.embed_query(log_text)
+        
+        best_match_category = "unclassified"
+        max_similarity = -1.0
+        
+        for cat_id, centroid_vector in self.category_centroids.items():
+            similarity = cosine_similarity([log_vector], [centroid_vector])[0][0]
+            if similarity > max_similarity:
+                max_similarity = similarity
+                best_match_category = cat_id
+        
+        if max_similarity < similarity_threshold:
+            return "unclassified"
+        
+        return best_match_category
 
     def classify_logs_in_batch(self, log_entries):
         """複数のログエントリをバッチで分類する"""
-        if not self.categories:
+        if not self.category_centroids:
             return {}
 
-        category_list_str = "\\n".join([f"- {key}: {value['name']}" for key, value in self.categories.items()])
+        category_list_str = "\\n".join([f"- {key}: {value['name']}" for key, value in self.category_centroids.items()])
         
         # 複数のログを整形してプロンプトに含める
         log_entries_str = "\\n---\\n".join([f"LOG_ID: {log['log_id']}\\n" + json.dumps(log, ensure_ascii=False, indent=2) for log in log_entries])
@@ -49,7 +77,7 @@ class ClassificationAgent:
             partial_variables={"format_instructions": parser.get_format_instructions()},
         )
 
-        chain = prompt | self.llm | parser
+        chain = prompt | self.embedding_model | parser
         
         print(f"Classifying {len(log_entries)} logs in a single batch...")
         response = chain.invoke({
@@ -80,5 +108,5 @@ if __name__ == '__main__':
     print(f"\\nClassified as: {result_id}")
     
     # カテゴリ名も表示してみる
-    if result_id in agent.categories:
-        print(f"Category Name: {agent.categories[result_id]['name']}") 
+    if result_id in agent.category_centroids:
+        print(f"Category Name: {agent.category_centroids[result_id]['name']}") 
