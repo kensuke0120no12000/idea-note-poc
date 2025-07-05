@@ -1,0 +1,18 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+
+# LLM and RAG
+langchain
+langchain-community
+langchain-google-genai
+faiss-cpu
+
+# Database
+sqlalchemy
+alembic
+
+# Utilities
+python-dotenv
+pydantic
+pydantic-settings 
